@@ -1,0 +1,44 @@
+# ===== BẢO MẬT — KHÔNG ĐƯỢC COMMIT =====
+credentials.json
+token.json
+*.env
+.env
+
+# ===== FILE DỮ LIỆU LỚN =====
+*.mbox
+*.mbox.msf
+
+# ===== THƯ MỤC ĐẦU RA (ĐƯỢC TẠO TỰ ĐỘNG KHI CHẠY) =====
+output/
+
+# ===== FILE DỮ LIỆU GỐC (CHỨA THÔNG TIN CÁ NHÂN) =====
+# Bỏ comment dòng dưới nếu muốn gitignore file CSV
+# mail1.csv
+# messages.csv
+
+# ===== PYTHON =====
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+*.egg-info/
+dist/
+build/
+
+# ===== JUPYTER =====
+.ipynb_checkpoints/
+*/.ipynb_checkpoints/*
+
+# ===== VSCODE =====
+.vscode/settings.json
+.vscode/launch.json
+
+# ===== HỆ THỐNG =====
+.DS_Store
+Thumbs.db
+desktop.ini
