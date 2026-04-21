@@ -7,17 +7,16 @@ sys.stdout.reconfigure(encoding="utf-8")
 
 import os
 from docx import Document
-from docx.shared import Pt, Cm, RGBColor, Inches
+from docx.shared import Pt, Cm, RGBColor, Inches, Emu
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.enum.table import WD_TABLE_ALIGNMENT, WD_ALIGN_VERTICAL
 from docx.oxml.ns import qn
 from docx.oxml import OxmlElement
 import copy
 
-OUTPUT_PATH = os.path.join(
-    os.path.dirname(os.path.abspath(__file__)),
-    "output", "reports", "BaoCao_SpamClassifier.docx"
-)
+BASE_DIR    = os.path.dirname(os.path.abspath(__file__))
+OUTPUT_PATH = os.path.join(BASE_DIR, "output", "reports", "BaoCao_SpamClassifier.docx")
+REPORTS_DIR = os.path.join(BASE_DIR, "output", "reports")
 os.makedirs(os.path.dirname(OUTPUT_PATH), exist_ok=True)
 
 doc = Document()
@@ -195,6 +194,19 @@ def hline():
 
 def page_break():
     doc.add_page_break()
+
+def add_image(filename, width_cm=14.0):
+    """Chèn hình ảnh từ thư mục output/reports/ nếu file tồn tại."""
+    img_path = os.path.join(REPORTS_DIR, filename)
+    if os.path.exists(img_path):
+        p = doc.add_paragraph()
+        p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        p.paragraph_format.space_before = Pt(6)
+        p.paragraph_format.space_after  = Pt(4)
+        run = p.add_run()
+        run.add_picture(img_path, width=Cm(width_cm))
+    else:
+        body(f"[Hình: {filename} — chạy notebook để tạo]", indent=False)
 
 
 # ═══════════════════════════════════════════════════════════
@@ -550,6 +562,13 @@ add_table(
     col_widths=[4.5, 3.0, 3.5, 3.5, 4.5]
 )
 
+para("", space_before=10)
+add_image("class_balance.png", width_cm=13)
+fig_caption("Hình 3.1 – Phân phối nhãn Spam vs Ham trong dataset (sau oversampling)")
+
+add_image("eda_analysis.png", width_cm=15)
+fig_caption("Hình 3.2 – Biểu đồ EDA: phân tích khám phá dữ liệu (độ dài email, phân phối nhãn)")
+
 heading_section("3.3", "Tiền xử lý Văn bản")
 body(
     "Pipeline tiền xử lý văn bản được thiết kế để xử lý cả email tiếng Việt và tiếng Anh, "
@@ -603,43 +622,55 @@ bullet("Mô hình: MultinomialNB(alpha=1.0) — Laplace smoothing")
 heading_section("4.2", "Kết quả Đánh giá")
 body(
     "Sau khi huấn luyện trên tập train đã được cân bằng bằng RandomOverSampler, "
-    "mô hình được đánh giá trên tập test độc lập (chưa qua oversampling):", indent=True
+    "mô hình được đánh giá trên tập test độc lập (chưa qua oversampling). "
+    "Tổng tập test: 2,496 email (TP=71, TN=2,386, FP=35, FN=4):", indent=True
 )
 para("", space_before=8)
 table_caption("Bảng 4.1 – Kết quả đánh giá mô hình Naive Bayes")
 add_table(
     headers=["Chỉ số", "Giá trị", "Ý nghĩa", "Đánh giá"],
     rows=[
-        ["Accuracy",  "~95%+", "Tỉ lệ dự đoán đúng tổng thể",      "✅ Đạt yêu cầu (>90%)"],
-        ["Precision", "~90%+", "Khi đoán spam, bao nhiêu % đúng",   "✅ Tốt"],
-        ["Recall",    "~85%+", "Bao nhiêu % spam được phát hiện",    "🟡 Cần cải thiện"],
-        ["F1-Score",  "~87%+", "Cân bằng Precision và Recall",       "✅ Tốt"],
+        ["Accuracy",  "98.44%", "Tỉ lệ dự đoán đúng tổng thể",      "✅ Xuất sắc (>90%)"],
+        ["Precision", "66.98%", "Khi đoán spam, bao nhiêu % đúng",   "🟡 Chấp nhận được"],
+        ["Recall",    "94.67%", "Bao nhiêu % spam được phát hiện",    "✅ Rất tốt"],
+        ["F1-Score",  "78.45%", "Cân bằng Precision và Recall",       "✅ Tốt"],
     ],
     col_widths=[3.5, 2.5, 6.0, 5.0]
 )
-para("(*) Điền giá trị thực tế sau khi chạy notebook spam_classifier.ipynb",
-     WD_ALIGN_PARAGRAPH.CENTER, size=12, italic=True)
+para("TP=71 (Spam đúng)  •  TN=2,386 (Ham đúng)  •  FP=35 (Ham bị nhầm Spam)  •  FN=4 (Spam bị bỏ sót)",
+     WD_ALIGN_PARAGRAPH.CENTER, size=11, italic=True, space_before=4)
 
 heading_section("4.3", "Phân tích kết quả")
-body("Mô hình đạt được kết quả tốt với những điểm mạnh và hạn chế sau:", indent=True)
+body(
+    "Mô hình đạt Accuracy 98.44% và Recall 94.67% — cho thấy hệ thống phát hiện "
+    "được 94.67% email spam thực sự. Chỉ có 4 email spam bị bỏ sót (FN=4) trên toàn bộ "
+    "tập test, điều này rất quan trọng trong bài toán lọc spam. "
+    "Precision 66.98% còn khiêm tốn: 35 email Ham bị nhầm thành Spam (FP=35), "
+    "song đây là đánh đổi hợp lý — tốt hơn bỏ sót spam.", indent=True
+)
 
 p = doc.add_paragraph()
 p.paragraph_format.space_before = Pt(4)
 p.paragraph_format.space_after  = Pt(4)
 r = p.add_run("Điểm mạnh:")
 set_font(r, size=13, bold=True, color=(0, 128, 0))
-bullet("Accuracy cao nhờ dataset có nhiều HAM rõ ràng (email từ Google, Facebook Messenger)")
-bullet("Precision tốt: ít email HAM bị nhầm là SPAM (False Positive thấp) — người dùng không mất email quan trọng")
-bullet("Tốc độ huấn luyện và dự đoán rất nhanh (đặc điểm của Naive Bayes)")
+bullet("Accuracy 98.44%: vượt mục tiêu 90% rất xa — mô hình phân loại chính xác 2,457/2,496 email")
+bullet("Recall 94.67%: chỉ bỏ sót 4 email spam — đảm bảo người dùng không nhận spam")
+bullet("FN cực thấp (4/75 spam): hệ thống nhạy cảm tốt với spam thực tế")
+bullet("Tốc độ huấn luyện và dự đoán rất nhanh (đặc trưng của Naive Bayes)")
 
 p = doc.add_paragraph()
 p.paragraph_format.space_before = Pt(4)
 p.paragraph_format.space_after  = Pt(4)
 r = p.add_run("Điểm hạn chế:")
 set_font(r, size=13, bold=True, color=(192, 0, 0))
-bullet("Recall chưa tối ưu: một số spam tiếng Việt đa dạng về từ ngữ bị bỏ sót")
-bullet("Dataset mất cân bằng nặng (11.7% spam) — dù đã xử lý bằng oversampling")
-bullet("Naive Bayes giả định từ độc lập — không nắm bắt được ngữ cảnh và ngữ nghĩa")
+bullet("Precision 66.98%: 35 email Ham bị nhầm là Spam — người dùng có thể mất email quan trọng")
+bullet("Dataset mất cân bằng nặng (11.7% spam gốc) — dù đã xử lý bằng RandomOverSampler")
+bullet("Naive Bayes giả định các từ độc lập — không nắm bắt được ngữ cảnh và ngữ nghĩa câu")
+
+para("", space_before=10)
+add_image("evaluation.png", width_cm=14)
+fig_caption("Hình 4.1 – Confusion Matrix và các chỉ số đánh giá mô hình Naive Bayes")
 
 heading_section("4.4", "Phân tích từ đặc trưng")
 body(
@@ -654,6 +685,10 @@ body(
     "Kết quả này phản ánh đúng thực tế: spam thường chứa nhiều từ ngữ kêu gọi hành động "
     "và khuyến mãi, trong khi ham chứa các từ ngữ tự nhiên trong giao tiếp.", indent=True
 )
+
+para("", space_before=10)
+add_image("feature_importance.png", width_cm=14)
+fig_caption("Hình 4.2 – Top 20 từ đặc trưng nhất của Spam và Ham")
 
 heading_section("4.5", "Gợi ý cải thiện")
 bullet("Thu thập thêm dữ liệu spam đa dạng hơn (hiện tại chỉ 11.7% — mất cân bằng)")
@@ -673,7 +708,8 @@ body(
     "Dự án đã xây dựng thành công hệ thống phân loại email rác sử dụng thuật toán "
     "Multinomial Naive Bayes trên dữ liệu thực từ 2 tài khoản Gmail (39,006 email). "
     "Hệ thống xử lý được cả email tiếng Việt (underthesea) và tiếng Anh trong cùng "
-    "một pipeline, đạt độ chính xác trên 90%.", indent=True
+    "một pipeline, đạt Accuracy 98.44%, Recall 94.67% và F1-Score 78.45% "
+    "trên tập test 2,496 email thực tế.", indent=True
 )
 body(
     "Toàn bộ quy trình từ thu thập dữ liệu, gán nhãn (nhãn thật từ Gmail + heuristics), "
